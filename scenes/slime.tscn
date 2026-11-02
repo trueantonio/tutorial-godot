@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://bmek3d2fj6jdq" path="res://scripts/slime.gd" id="1_n6pvg"]
 [ext_resource type="Texture2D" uid="uid://dobmj11hu3lr7" path="res://assets/sprites/slime_green.png" id="1_p2gj0"]
 [ext_resource type="PackedScene" uid="uid://cksiikha1xxf7" path="res://scenes/killzone.tscn" id="2_n6pvg"]
+[ext_resource type="AudioStream" uid="uid://dsvdotp5rxjyt" path="res://assets/sounds/explosion.wav" id="3_death"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_pjw23"]
 atlas = ExtResource("1_p2gj0")
@@ -43,6 +44,9 @@ animations = [{
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_c2vrj"]
 size = Vector2(12, 13)
 
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_hurtbox"]
+size = Vector2(14, 14)
+
 [node name="Slime" type="Node2D" unique_id=515399610]
 script = ExtResource("1_n6pvg")
 
@@ -59,6 +63,19 @@ flip_h = true
 position = Vector2(0, -6.5)
 shape = SubResource("RectangleShape2D_c2vrj")
 
+[node name="Hurtbox" type="Area2D" parent="."]
+collision_layer = 4
+collision_mask = 0
+monitoring = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Hurtbox"]
+position = Vector2(0, -6.5)
+shape = SubResource("RectangleShape2D_hurtbox")
+
+[node name="DeathSound" type="AudioStreamPlayer2D" parent="."]
+stream = ExtResource("3_death")
+bus = &"SFX"
+
 [node name="RayCastRight" type="RayCast2D" parent="." unique_id=2068477450]
 position = Vector2(0, -7)
 target_position = Vector2(10, 0)
@@ -66,3 +83,7 @@ target_position = Vector2(10, 0)
 [node name="RayCastLeft" type="RayCast2D" parent="." unique_id=1929085312]
 position = Vector2(0, -7)
 target_position = Vector2(-10, 0)
+
+[node name="RayCastFloor" type="RayCast2D" parent="."]
+position = Vector2(6, -1)
+target_position = Vector2(0, 12)

@@ -5,6 +5,7 @@
 [ext_resource type="AudioStream" uid="uid://cce06s5mqs7bo" path="res://assets/sounds/jump.wav" id="2_jump"]
 [ext_resource type="AudioStream" uid="uid://dte11vqyu1a0r" path="res://assets/sounds/power_up.wav" id="3_double"]
 [ext_resource type="AudioStream" uid="uid://b0sxdruwyr0uk" path="res://assets/sounds/tap.wav" id="4_dash"]
+[ext_resource type="Texture2D" uid="uid://bh42wab5wjbgb" path="res://assets/sprites/sword.png" id="5_sword"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_g2els"]
 atlas = ExtResource("1_3vyb7")
@@ -174,6 +175,9 @@ animations = [{
 [sub_resource type="CircleShape2D" id="CircleShape2D_c2vrj"]
 radius = 5.0
 
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_sword"]
+size = Vector2(20, 20)
+
 [node name="player" type="CharacterBody2D" unique_id=567154488]
 z_index = 5
 collision_layer = 2
@@ -200,3 +204,39 @@ bus = &"SFX"
 [node name="DashSound" type="AudioStreamPlayer2D" parent="."]
 stream = ExtResource("4_dash")
 bus = &"SFX"
+
+[node name="Sword" type="Sprite2D" parent="."]
+position = Vector2(4, -12)
+z_index = 1
+visible = false
+texture = ExtResource("5_sword")
+centered = false
+offset = Vector2(0, -4)
+
+[node name="SwordHitbox" type="Area2D" parent="."]
+position = Vector2(14, -12)
+collision_layer = 0
+collision_mask = 4
+monitoring = false
+monitorable = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="SwordHitbox"]
+shape = SubResource("RectangleShape2D_sword")
+
+[node name="SwordSlash" type="Line2D" parent="."]
+position = Vector2(14, -12)
+z_index = 1
+visible = false
+points = PackedVector2Array(0, -14, 7, -9, 12, 0, 7, 9, 0, 14)
+width = 3.0
+default_color = Color(0.85, 0.95, 1, 0.9)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="SwordSound" type="AudioStreamPlayer2D" parent="."]
+stream = ExtResource("4_dash")
+bus = &"SFX"
+pitch_scale = 1.35
+
+[connection signal="area_entered" from="SwordHitbox" to="." method="_on_sword_hitbox_area_entered"]
