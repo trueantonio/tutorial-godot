@@ -337,7 +337,17 @@ offset_bottom = 15.0
 theme_override_colors/font_color = Color(0, 0, 0, 1)
 theme_override_fonts/font = ExtResource("8_0tnpc")
 theme_override_font_sizes/font_size = 8
-text = "press space to jump."
+text = "Space: jump twice"
+
+[node name="Label4" type="Label" parent="labels"]
+offset_left = -138.0
+offset_top = 15.0
+offset_right = -8.0
+offset_bottom = 29.0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("8_0tnpc")
+theme_override_font_sizes/font_size = 8
+text = "Shift or X: dash"
 
 [node name="Label2" type="Label" parent="labels" unique_id=742998367]
 offset_left = 363.0
