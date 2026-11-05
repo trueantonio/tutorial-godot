@@ -23,3 +23,14 @@ Tutorial de Godot del canal de Brackeys de youtube.
 - Consigue las 15 monedas para ganar la partida.
 
 Puedes ajustar velocidades, tiempos y cooldowns en las constantes de `scripts/player.gd`. La velocidad de los slimes está en `scripts/slime.gd` y la del fantasma en `scripts/ghost_enemy.gd`.
+
+## Máquina de estados
+
+El jugador usa una máquina de estados por nodos basada en el patrón de GDQuest:
+
+- `scripts/state.gd`: clase base `State`, con las señales y métodos que comparten todos los estados.
+- `scripts/state_machine.gd`: clase `StateMachine`, que conecta los estados y delega `_physics_process` al estado actual.
+- `scripts/player_state.gd`: base de los estados del jugador, con utilidades compartidas como el salto, el dash y el wall slide.
+- `scripts/states/`: estados `Idle`, `Run`, `Jump`, `Fall`, `Dash` y `WallSlide`.
+
+El ataque con espada se mantiene como un sistema independiente en `scripts/player.gd` para poder moverte y atacar a la vez. Los estados están en el nodo `StateMachine` de `scenes/player.tscn` y el estado inicial es `Idle`.

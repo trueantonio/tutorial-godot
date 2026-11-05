@@ -1,3 +1,4 @@
+class_name Player
 extends CharacterBody2D
 
 
@@ -41,7 +42,6 @@ var jump_buffer_timer := 0.0
 var dash_timer := 0.0
 var dash_cooldown_timer := 0.0
 var dash_direction := 1.0
-var is_wall_sliding := false
 var attack_timer := 0.0
 var attack_cooldown_timer := 0.0
 
@@ -57,25 +57,13 @@ var attack_cooldown_timer := 0.0
 
 func _physics_process(delta: float) -> void:
 	var on_floor := is_on_floor()
-	var direction := Input.get_axis("move_left", "move_right")
-	var wall_normal := get_wall_normal()
-	var pushing_into_wall := direction != 0.0 and direction * wall_normal.x < 0.0
 
-	# Timers.
+	# Shared timers. The Dash state owns dash_timer.
 	coyote_timer = COYOTE_TIME if on_floor else maxf(coyote_timer - delta, 0.0)
 	jump_buffer_timer = maxf(jump_buffer_timer - delta, 0.0)
-	dash_timer = maxf(dash_timer - delta, 0.0)
 	dash_cooldown_timer = maxf(dash_cooldown_timer - delta, 0.0)
 	attack_timer = maxf(attack_timer - delta, 0.0)
 	attack_cooldown_timer = maxf(attack_cooldown_timer - delta, 0.0)
-
-	is_wall_sliding = (
-		not on_floor
-		and is_on_wall()
-		and pushing_into_wall
-		and velocity.y > 0.0
-		and dash_timer <= 0.0
-	)
 
 	# Recharge jumps and air dashes when touching the ground.
 	if on_floor:
@@ -85,55 +73,18 @@ func _physics_process(delta: float) -> void:
 		# Walking off a ledge uses the first jump.
 		jumps_left = MAX_JUMPS - 1
 
-	# Gravity (disabled during a dash so it stays horizontal).
-	if not on_floor and dash_timer <= 0.0:
-		velocity += get_gravity() * delta
-		if is_wall_sliding:
-			velocity.y = minf(velocity.y, WALL_SLIDE_SPEED)
-
 	# Buffer jump presses so they still work a few frames before landing.
 	if Input.is_action_just_pressed("jump"):
 		jump_buffer_timer = JUMP_BUFFER_TIME
 
-	# Jump, wall jump, double jump, or coyote jump.
-	if jump_buffer_timer > 0.0:
-		if is_wall_sliding:
-			_wall_jump(wall_normal)
-		elif coyote_timer > 0.0:
-			_jump(JUMP_VELOCITY, false)
-		elif jumps_left > 0:
-			_jump(DOUBLE_JUMP_VELOCITY, true)
-
-	# Release jump early for a shorter hop.
-	if Input.is_action_just_released("jump") and velocity.y < 0.0:
-		velocity.y *= JUMP_CUT_MULTIPLIER
-
-	# Dash.
-	if Input.is_action_just_pressed("dash") and dash_cooldown_timer <= 0.0 and dash_timer <= 0.0:
-		_start_dash(on_floor)
-
 	# Face the direction of movement before attacking.
+	var direction := get_input_direction()
 	if direction != 0.0:
 		animated_sprite.flip_h = direction < 0.0
 
-	# Sword attack.
+	# Sword attack (independent from the locomotion state machine).
 	if Input.is_action_just_pressed("attack") and attack_cooldown_timer <= 0.0:
 		_start_attack()
-
-	if dash_timer > 0.0:
-		velocity.x = dash_direction * DASH_SPEED
-		velocity.y = 0.0
-	elif is_wall_sliding:
-		# Stick to the wall and slide down slowly while holding toward it.
-		velocity.x = -wall_normal.x * WALL_STICK_SPEED
-	else:
-		var target_speed := direction * SPEED
-		var acceleration := GROUND_ACCELERATION if on_floor else AIR_ACCELERATION
-		var friction := GROUND_FRICTION if on_floor else AIR_FRICTION
-		if direction != 0.0:
-			velocity.x = move_toward(velocity.x, target_speed, acceleration * delta)
-		else:
-			velocity.x = move_toward(velocity.x, 0.0, friction * delta)
 
 	# Sword swing visual and hit detection.
 	if attack_timer > 0.0:
@@ -147,42 +98,33 @@ func _physics_process(delta: float) -> void:
 		sword_slash.visible = false
 		sword_hitbox.monitoring = false
 
-	_update_animation(on_floor, direction)
-	move_and_slide()
+
+func get_input_direction() -> float:
+	return Input.get_axis("move_left", "move_right")
 
 
-func _jump(jump_velocity: float, is_double_jump: bool) -> void:
-	velocity.y = jump_velocity
-	jump_buffer_timer = 0.0
-	coyote_timer = 0.0
-	dash_timer = 0.0
-	jumps_left -= 1
+func apply_horizontal_movement(delta: float, on_floor: bool) -> void:
+	var direction := get_input_direction()
+	var target_speed := direction * SPEED
+	var acceleration := GROUND_ACCELERATION if on_floor else AIR_ACCELERATION
+	var friction := GROUND_FRICTION if on_floor else AIR_FRICTION
 
-	if is_double_jump:
-		double_jump_sound.play()
-		_flash_sprite()
+	if direction != 0.0:
+		velocity.x = move_toward(velocity.x, target_speed, acceleration * delta)
 	else:
-		jump_sound.play()
+		velocity.x = move_toward(velocity.x, 0.0, friction * delta)
 
 
-func _wall_jump(wall_normal: Vector2) -> void:
-	velocity.x = wall_normal.x * WALL_JUMP_PUSH
-	velocity.y = WALL_JUMP_VELOCITY
-	jump_buffer_timer = 0.0
-	coyote_timer = 0.0
-	dash_timer = 0.0
-	jumps_left = MAX_JUMPS - 1
-	is_wall_sliding = false
-	jump_sound.play()
+func try_start_dash(on_floor: bool) -> bool:
+	if dash_cooldown_timer > 0.0 or dash_timer > 0.0:
+		return false
 
-
-func _start_dash(on_floor: bool) -> void:
 	if not on_floor:
 		if air_dashes_left <= 0:
-			return
+			return false
 		air_dashes_left -= 1
 
-	var direction := Input.get_axis("move_left", "move_right")
+	var direction := get_input_direction()
 	if direction == 0.0:
 		direction = -1.0 if animated_sprite.flip_h else 1.0
 
@@ -190,6 +132,45 @@ func _start_dash(on_floor: bool) -> void:
 	dash_timer = DASH_DURATION
 	dash_cooldown_timer = DASH_COOLDOWN
 	dash_sound.play()
+	return true
+
+
+func perform_jump(jump_velocity: float, is_double: bool) -> void:
+	velocity.y = jump_velocity
+	jump_buffer_timer = 0.0
+	coyote_timer = 0.0
+	dash_timer = 0.0
+	jumps_left -= 1
+
+	if is_double:
+		double_jump_sound.play()
+		_flash_sprite()
+	else:
+		jump_sound.play()
+
+
+func perform_wall_jump(wall_normal: Vector2) -> void:
+	velocity.x = wall_normal.x * WALL_JUMP_PUSH
+	velocity.y = WALL_JUMP_VELOCITY
+	jump_buffer_timer = 0.0
+	coyote_timer = 0.0
+	dash_timer = 0.0
+	jumps_left = MAX_JUMPS - 1
+	jump_sound.play()
+
+
+func apply_jump_cut() -> void:
+	if Input.is_action_just_released("jump") and velocity.y < 0.0:
+		velocity.y *= JUMP_CUT_MULTIPLIER
+
+
+func update_locomotion_animation(on_floor: bool) -> void:
+	if not on_floor:
+		animated_sprite.play("jump")
+	elif absf(velocity.x) > 5.0 or get_input_direction() != 0.0:
+		animated_sprite.play("run")
+	else:
+		animated_sprite.play("idle")
 
 
 func _start_attack() -> void:
@@ -225,12 +206,3 @@ func _flash_sprite() -> void:
 	animated_sprite.modulate = Color(1.6, 1.6, 2.0)
 	var tween := create_tween()
 	tween.tween_property(animated_sprite, "modulate", Color.WHITE, 0.18)
-
-
-func _update_animation(on_floor: bool, direction: float) -> void:
-	if not on_floor:
-		animated_sprite.play("jump")
-	elif absf(velocity.x) > 5.0 or direction != 0.0:
-		animated_sprite.play("run")
-	else:
-		animated_sprite.play("idle")

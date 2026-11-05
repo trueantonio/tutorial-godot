@@ -6,6 +6,13 @@
 [ext_resource type="AudioStream" uid="uid://dte11vqyu1a0r" path="res://assets/sounds/power_up.wav" id="3_double"]
 [ext_resource type="AudioStream" uid="uid://b0sxdruwyr0uk" path="res://assets/sounds/tap.wav" id="4_dash"]
 [ext_resource type="Texture2D" uid="uid://bh42wab5wjbgb" path="res://assets/sprites/sword.png" id="5_sword"]
+[ext_resource type="Script" uid="uid://dl8i58dd1w23j" path="res://scripts/state_machine.gd" id="6_fsm"]
+[ext_resource type="Script" uid="uid://86023ynjnrpu" path="res://scripts/states/player_idle.gd" id="7_idle"]
+[ext_resource type="Script" uid="uid://bonay4cq1a1pe" path="res://scripts/states/player_run.gd" id="8_run"]
+[ext_resource type="Script" uid="uid://dlmwsx71atgn0" path="res://scripts/states/player_jump.gd" id="9_jump"]
+[ext_resource type="Script" uid="uid://cq5knskv308ux" path="res://scripts/states/player_fall.gd" id="10_fall"]
+[ext_resource type="Script" uid="uid://cnn1gwyqjhe7x" path="res://scripts/states/player_dash.gd" id="11_dash"]
+[ext_resource type="Script" uid="uid://bsnc5gp570k55" path="res://scripts/states/player_wall_slide.gd" id="12_wall"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_g2els"]
 atlas = ExtResource("1_3vyb7")
@@ -238,5 +245,27 @@ end_cap_mode = 2
 stream = ExtResource("4_dash")
 bus = &"SFX"
 pitch_scale = 1.35
+
+[node name="StateMachine" type="Node" parent="."]
+script = ExtResource("6_fsm")
+initial_state = NodePath("Idle")
+
+[node name="Idle" type="Node" parent="StateMachine"]
+script = ExtResource("7_idle")
+
+[node name="Run" type="Node" parent="StateMachine"]
+script = ExtResource("8_run")
+
+[node name="Jump" type="Node" parent="StateMachine"]
+script = ExtResource("9_jump")
+
+[node name="Fall" type="Node" parent="StateMachine"]
+script = ExtResource("10_fall")
+
+[node name="Dash" type="Node" parent="StateMachine"]
+script = ExtResource("11_dash")
+
+[node name="WallSlide" type="Node" parent="StateMachine"]
+script = ExtResource("12_wall")
 
 [connection signal="area_entered" from="SwordHitbox" to="." method="_on_sword_hitbox_area_entered"]
